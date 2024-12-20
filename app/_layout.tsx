@@ -1,37 +1,116 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
+import { ThemeProvider } from "@shopify/restyle";
+import { useEffect, useState } from "react";
+import Toast from "react-native-toast-message";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { AuthContextProvider, TenantContextProvider } from "../context";
+import { ActionSheetProvider } from "@expo/react-native-action-sheet";
+import * as Notifications from "expo-notifications";
+import { AppEntry } from "./navigation";
+import { theme } from "@/utils";
+import { Alert, Button, Platform } from "react-native";
+import * as BackgroundFetch from "expo-background-fetch";
+import * as TaskManager from "expo-task-manager";
+import { getCall } from "@/api";
 
-import { useColorScheme } from '@/hooks/useColorScheme';
+async function schedulePushNotification() {
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: "Yeni Bildiriş! 🔔",
+      body: "Sizin yeni statuslu çağırışınız var",
+      data: { data: "goes here" },
+    },
+    trigger: { seconds: 2 },
+  });
+}
+const TASK_NAME = "myTaskName";
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+// TaskManager.defineTask(TASK_NAME, () => {
+//   try {
+//     getCall([
+//       {
+//         limit: 8,
+//         page: 1,
+//         statuses: ["awaiting_ambulance", "processing_by_ambulance"],
+//       },
+//     ]).then((productData) => {
+//       if (
+//         productData.filter(
+//           ({ status }: any) =>
+//             status === "awaiting_dispatcher" || status === "awaiting_ambulance"
+//         ).length > 0
+//       ) {
+//         console.log("test");
+//         schedulePushNotification();
+//       }
+
+//       return productData
+//         ? BackgroundFetch.BackgroundFetchResult.NewData
+//         : BackgroundFetch.BackgroundFetchResult.NoData;
+//     });
+//   } catch (err) {
+//     return BackgroundFetch.BackgroundFetchResult.Failed;
+//   }
+// });
+
+// const RegisterBackgroundTask = async () => {
+//   try {
+//     await BackgroundFetch.registerTaskAsync(TASK_NAME, {
+//       minimumInterval: 5,
+//     });
+//     console.log("Task registered");
+//   } catch (err) {
+//     console.log("Task Register failed:", err);
+//   }
+// };
+
+// Notifications.setNotificationHandler({
+//   handleNotification: async () => ({
+//     shouldShowAlert: true,
+//     shouldPlaySound: false,
+//     shouldSetBadge: false,
+//   }),
+// });
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
-
   useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
+    // async function configurePushNotifications() {
+    //   const { status } = await Notifications.getPermissionsAsync();
+    //   let finalStatus = status;
+    //   if (finalStatus !== "granted") {
+    //     const { status } = await Notifications.requestPermissionsAsync();
+    //     finalStatus = status;
+    //   }
+    //   if (finalStatus !== "granted") {
+    //     Alert.alert("Permission required");
+    //     return;
+    //   }
 
-  if (!loaded) {
-    return null;
-  }
+    //   const pushTokenData = await Notifications.getExpoPushTokenAsync();
+    //   console.log(pushTokenData);
 
+    //   if (Platform.OS === "android") {
+    //     Notifications.setNotificationChannelAsync("default", {
+    //       name: "default",
+    //       importance: Notifications.AndroidImportance.DEFAULT,
+    //     });
+    //   }
+    // }
+
+    // RegisterBackgroundTask();
+    // configurePushNotifications();
+  }, []);
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
+    <ThemeProvider theme={theme}>
+      <SafeAreaProvider>
+        <TenantContextProvider>
+          <AuthContextProvider>
+            <ActionSheetProvider>
+              <AppEntry />
+            </ActionSheetProvider>
+            <Toast />
+          </AuthContextProvider>
+        </TenantContextProvider>
+      </SafeAreaProvider>
     </ThemeProvider>
   );
 }
